@@ -16,58 +16,49 @@
         <option value="B">B</option>
         <option value="C">C</option>
       </select>
-      <!-- <a href="javascript:send()">send()</a> -->
       <div id="widgets" style="display:none;">
         <h2>Step #2 - Make Pricing, Sales and Marketing Decisions</h2>
         <table style="color: blue; font-size: 20px;">
           <tr>
             <th>Price</th>
-            <td><input style="width: 400px;" type="range" min="0" max="10" step="0.1" value="5" id="price" oninput="updateSliderLabels()" onchange="send()"/></td>
+            <td><input style="width: 400px;" type="range" min="0" max="5" step="0.1" value="2.5" id="price" oninput="updateWidgets()" onchange="sendAndUpdate()"/></td>
             <td id="priceLabel"></td>
           </tr>
           <tr>
             <th>Sales</th>
-            <td><input style="width: 400px;" type="range" min="0" max="10" step="0.1" value="5" id="sales" oninput="updateSliderLabels()" onchange="send()"/></td>
+            <td><input style="width: 400px;" type="range" min="0" max="10000000" step="100000" value="500000" id="sales" oninput="updateWidgets()" onchange="sendAndUpdate()"/></td>
             <td id="salesLabel"></td>
           </tr>
           <tr>
             <th>Marketing</th>
-            <td><input style="width: 400px;" type="range" min="0" max="10" step="0.1" value="5" id="marketing" oninput="updateSliderLabels()" onchange="send()"/></td>
+            <td><input style="width: 400px;" type="range" min="0" max="10000000" step="100000" value="5000" id="marketing" oninput="updateWidgets()" onchange="sendAndUpdate()"/></td>
             <td id="marketingLabel"></td>
           </tr>
         </table>
-        <h2>Step #3 - Observe Revenue and Market Share</h2>
-        <div id="revenue" style="color: blue; margin: 10px 0px 10px 0px; font-size: 20px; font-weight: bold;"></div>
-        <div id="marketShare" style="color: blue; margin: 10px 0px 10px 0px; font-size: 20px; font-weight: bold;"></div>
+        <h2>Step #3 - Observe Gross Profit and Market Share</h2>
+        <table style="color: blue; font-size: 20px;">
+          <tr>
+            <th>Gross Profit</th>
+            <td id="grossProfit"></td>
+          </tr>
+          <tr>
+            <th>Market Share</th>
+            <td id="marketShare"></td>
+          </tr>
+        </table>
       </div>
       <br />
       <!-- <iframe id="marketShare" width="600" height="371" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3-qRKyjsw34DdR_nDGU6XDvzZswC4VBXH9QEBw7qwFfP4f8Gb_cZ9SQmoe2tFTOKda6PvxJ0QwC1H/pubchart?oid=2019744637&amp;format=interactive"></iframe> -->
       <script type="text/javascript">
         var ws = null;
-      
-        function send() {
-          document.getElementById('revenue').innerHTML = "Calculating...";
-          document.getElementById('marketShare').innerHTML = "";
-          if (ws != null) {
-            var team = document.getElementById('team').value;
-            if (team != 'Select Team') {
-              var price = parseFloat(document.getElementById('price').value);
-              var sales = parseFloat(document.getElementById('sales').value);
-              var marketing = parseFloat(document.getElementById('marketing').value);
-              requestObject = {team: team, price: price, sales: sales, marketing: marketing};
-              msg = JSON.stringify(requestObject);
-              ws.send(msg);
-              console.log('Sent:', msg);
-            }
-          }
-        }
-      
-        function update() {
-          hideWidgets();
-          var team = document.getElementById('team').value;
-          if (team != null && team != 'Select Team') {
-            ws.send("");
-            console.log('Sent:');
+        
+        // Socket management
+        
+        function WebSocketTest() {
+          if ('WebSocket' in window) {
+            connectSocket();
+          } else {
+            alert('WebSocket NOT supported by your Browser!');
           }
         }
        
@@ -89,17 +80,16 @@
               var price = responseObject['inputs']['Price'][teamIndex];
               var sales = responseObject['inputs']['Sales'][teamIndex];
               var marketing = responseObject['inputs']['Marketing'][teamIndex];
-              var revenue = responseObject['outputs']['Revenue'][teamIndex];
+              var grossProfit = responseObject['outputs']['Gross Profit'][teamIndex];
               var marketShare = responseObject['outputs']['Market Share'][teamIndex];
               console.log('Input: Team:', team, 'Price:', price, 'Sales:', sales, 'Marketing', marketing);
-              console.log('Output: Team:', team, 'Revenue:', revenue, 'Market Share:', marketShare);
+              console.log('Output: Team:', team, 'Gross Profit:', grossProfit, 'Market Share:', marketShare);
               document.getElementById('price').value = price;
               document.getElementById('sales').value = sales;
               document.getElementById('marketing').value = marketing;
-              document.getElementById('revenue').innerHTML = revenue;
+              document.getElementById('grossProfit').innerHTML = grossProfit;
               document.getElementById('marketShare').innerHTML = marketShare;
               updateWidgets();
-              updateSliderLabels();
             } else {
               console.log('Team not selected!');
             }
@@ -112,12 +102,32 @@
             }, 1000);
           };
         }
+        
+        function sendAndUpdate() {
+          document.getElementById('grossProfit').innerHTML = "Calculating...";
+          document.getElementById('marketShare').innerHTML = "";
+          if (ws != null) {
+            var team = document.getElementById('team').value;
+            if (team != 'Select Team') {
+              var price = parseFloat(document.getElementById('price').value);
+              var sales = parseFloat(document.getElementById('sales').value);
+              var marketing = parseFloat(document.getElementById('marketing').value);
+              requestObject = {team: team, price: price, sales: sales, marketing: marketing};
+              msg = JSON.stringify(requestObject);
+              ws.send(msg);
+              console.log('Sent:', msg);
+            }
+          }
+        }
       
-        function WebSocketTest() {
-          if ('WebSocket' in window) {
-            connectSocket();
-          } else {
-            alert('WebSocket NOT supported by your Browser!');
+        function update() {
+          hideWidgets();
+          if (ws != null) {
+            var team = document.getElementById('team').value;
+            if (team != null && team != 'Select Team') {
+              ws.send("");
+              console.log('Sent:');
+            }
           }
         }
       
@@ -129,15 +139,11 @@
         function updateWidgets() {
           var widgets = document.getElementById('widgets');
           widgets.style.display = 'block';
-          updateSliderLabels();
-        }
-      
-        function updateSliderLabels() {
-          var price = document.getElementById('price').value;
+          var price = "$" + document.getElementById('price').value;
           document.getElementById('priceLabel').innerHTML = price;
-          var sales = document.getElementById('sales').value;
+          var sales = "$" + document.getElementById('sales').value;
           document.getElementById('salesLabel').innerHTML = sales;
-          var marketing = document.getElementById('marketing').value;
+          var marketing = "$" + document.getElementById('marketing').value;
           document.getElementById('marketingLabel').innerHTML = marketing;
         }
       
