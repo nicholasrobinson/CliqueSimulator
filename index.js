@@ -175,7 +175,7 @@ function fetchInputsAndOutputs(auth, ws) {
     // Fetch Outputs
     sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Outputs!C5:F7',
+      range: 'Outputs!C4:F7',
     }, (err, res) => {
       if (err) return console.log('The API returned an error: ' + err);
       const rows = res.data.values;

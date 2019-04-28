@@ -4,6 +4,10 @@
     <title>
       Firm Monocorn: Clique Pens Discussion
     </title>
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-title" content="Monocorn: Clique">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="white">
   </head>
   <body style="width: 100%;">
     <div style="position: absolute; bottom: 0px; right: 40%; width: 6%; z-index: -1"><img style="opacity: 0.3;" src="logo.png" /></div>
@@ -26,15 +30,17 @@
           </tr>
           <tr>
             <th>Sales</th>
-            <td><input style="width: 400px;" type="range" min="0" max="10000000" step="100000" value="500000" id="sales" oninput="updateWidgets()" onchange="sendAndUpdate()"/></td>
+            <td><input style="width: 400px;" type="range" min="0" max="10000000" step="100000" value="500000" id="sales" oninput="updateWidgets(this)" onchange="sendAndUpdate()"/></td>
             <td id="salesLabel"></td>
           </tr>
           <tr>
             <th>Marketing</th>
-            <td><input style="width: 400px;" type="range" min="0" max="10000000" step="100000" value="5000" id="marketing" oninput="updateWidgets()" onchange="sendAndUpdate()"/></td>
+            <td><input style="width: 400px;" type="range" min="0" max="10000000" step="100000" value="5000" id="marketing" oninput="updateWidgets(this)" onchange="sendAndUpdate()"/></td>
             <td id="marketingLabel"></td>
           </tr>
         </table>
+        <h2>Sales & Marketing Budget</h2>
+        <div id="budget"></div>
         <h2>Step #3 - Observe Gross Profit and Market Share</h2>
         <table style="color: blue; font-size: 20px;">
           <tr>
@@ -51,6 +57,9 @@
       <!-- <iframe id="marketShare" width="600" height="371" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3-qRKyjsw34DdR_nDGU6XDvzZswC4VBXH9QEBw7qwFfP4f8Gb_cZ9SQmoe2tFTOKda6PvxJ0QwC1H/pubchart?oid=2019744637&amp;format=interactive"></iframe> -->
       <script type="text/javascript">
         var ws = null;
+        var budget;
+        var lastSales;
+        var lastMarketing;
         
         // Socket management
         
@@ -80,13 +89,15 @@
               var price = responseObject['inputs']['Price'][teamIndex];
               var sales = responseObject['inputs']['Sales'][teamIndex];
               var marketing = responseObject['inputs']['Marketing'][teamIndex];
+              budget = responseObject['outputs']['Sales & Marketing Budget'][0];
               var grossProfit = responseObject['outputs']['Gross Profit'][teamIndex];
               var marketShare = responseObject['outputs']['Market Share'][teamIndex];
               console.log('Input: Team:', team, 'Price:', price, 'Sales:', sales, 'Marketing', marketing);
-              console.log('Output: Team:', team, 'Gross Profit:', grossProfit, 'Market Share:', marketShare);
+              console.log('Output: Sales & Marketing Budget:', budget, 'Team:', team, 'Gross Profit:', grossProfit, 'Market Share:', marketShare);
               document.getElementById('price').value = price;
               document.getElementById('sales').value = sales;
               document.getElementById('marketing').value = marketing;
+              document.getElementById('budget').innerHTML = "$" + budget;
               document.getElementById('grossProfit').innerHTML = grossProfit;
               document.getElementById('marketShare').innerHTML = marketShare;
               updateWidgets();
@@ -121,7 +132,7 @@
         }
       
         function update() {
-          hideWidgets();
+          console.log('Updating...');
           if (ws != null) {
             var team = document.getElementById('team').value;
             if (team != null && team != 'Select Team') {
@@ -136,18 +147,33 @@
           widgets.style.display = 'none';
         }
       
-        function updateWidgets() {
+        function updateWidgets(caller) {
           var widgets = document.getElementById('widgets');
           widgets.style.display = 'block';
+          document.getElementById('price').value;
           var price = "$" + document.getElementById('price').value;
           document.getElementById('priceLabel').innerHTML = price;
-          var sales = "$" + document.getElementById('sales').value;
-          document.getElementById('salesLabel').innerHTML = sales;
-          var marketing = "$" + document.getElementById('marketing').value;
-          document.getElementById('marketingLabel').innerHTML = marketing;
+          var salesInput = document.getElementById('sales');
+          var sales = parseInt(salesInput.value);
+          var marketingInput = document.getElementById('marketing')
+          var marketing = parseInt(marketingInput.value);
+          if (typeof caller !== 'undefined' && sales + marketing != budget) {
+            if (caller.id == 'sales') {
+              marketing = budget - sales;
+              marketingInput.value = marketing
+            } else {
+              sales = budget - marketing;
+              salesInput.value = budget - marketing;
+            }
+          }
+          document.getElementById('salesLabel').innerHTML = "$" + sales;
+          document.getElementById('marketingLabel').innerHTML = "$" + marketing;
         }
       
         WebSocketTest();
+        setInterval(function timeout() {
+          update();
+        }, 10000);
         // setInterval(function timeout() {
         //   console.log('Updating chart...');
         //   document.getElementById('marketShare').src = document.getElementById('marketShare').src;
