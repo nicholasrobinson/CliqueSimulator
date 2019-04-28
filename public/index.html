@@ -78,6 +78,14 @@
           ws.onopen = function() {
             console.log('Connected');
           };
+          
+          ws.onclose = function() {
+            alert('Reconnect?');
+          };
+          
+          ws.onerror = function() {
+            alert('Reconnect?');
+          };
 
           ws.onmessage = function (evt) { 
             var received_msg = evt.data;
