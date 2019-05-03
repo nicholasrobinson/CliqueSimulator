@@ -42,22 +42,32 @@ app.use(function (req, res, next) {
 app.use(express.static('public'))
 
 var wss = expressWs.getWss('/');
+
+// Load client secrets from a local file.
+var credentials;
+fs.readFile('credentials.json', (err, content) => {
+  if (err) {
+    return console.log('Error loading client secret file:', err);
+    process.exit();
+  } else {
+    credentials = JSON.parse(content);
+  }
+});
  
 app.ws('/', function(ws, req) {
   ws.on('message', function(msg) {
     console.log('Received:', msg);
-    // Load client secrets from a local file.
-    fs.readFile('credentials.json', (err, content) => {
-      if (err) return console.log('Error loading client secret file:', err);
-      // Authorize a client with credentials, then call the Google Sheets API.
-      if (msg == "") {
-        authorize(JSON.parse(content), fetchInputsAndOutputs, ws, msg);
-      } else {
-        authorize(JSON.parse(content), processInputsAndFetchInputsAndOutputs, ws, msg);
-      }
-    });
+    if (msg == "") {
+      authorize(credentials, fetchInputsAndOutputs);
+    } else {
+      authorize(credentials, processInputsAndFetchInputsAndOutputs, ws, msg);
+    }
   });
 });
+ 
+setInterval(() => {
+  authorize(credentials, fetchInputsAndOutputs);
+}, 5000);
  
 app.listen(8888);
 
@@ -153,7 +163,7 @@ function processInputsAndFetchInputsAndOutputs(auth, ws, inputMsg) {
   });
 }
 
-function fetchInputsAndOutputs(auth, ws) {
+function fetchInputsAndOutputs(auth) {
   const sheets = google.sheets({version: 'v4', auth});
   
   var responseObj = {};

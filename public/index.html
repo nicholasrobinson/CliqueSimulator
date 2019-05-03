@@ -14,7 +14,7 @@
     <div style="margin: auto; width: 50%;">
       <h1>Firm Monocorn: Clique Pens Discussion</h1>
       <h2>Step #1 - Select Your Team</h2>
-      <select style="color: blue; font-size: 20px" id="team" onchange="document.getElementById('loading').style.display = 'block'; update()">
+      <select style="color: blue; font-size: 20px" id="team" onchange="updateTeam()">
         <option>Select Team</option>
         <option value="A">A</option>
         <option value="B">B</option>
@@ -25,27 +25,32 @@
         Loading...
       </div> 
       <div id="widgets" style="display:none;">
-        <h2>Step #2 - Make Decisions</h2>
+        <h2>Step #2 - Make Decisions: Round <span id="round"></span></h2>
         <table style="font-size: 20px; text-align: left;">
           <tr>
             <th>Price</th>
-            <td><input style="width: 400px;" type="range" min="0" max="5" step="0.05" value="2.0" id="price" oninput="updateWidgets()" onchange="sendAndUpdate()"/></td>
+            <td><input style="width: 400px;" type="range" min="0" max="5" step="0.05" value="2.0" id="price" oninput="updateWidgets()"/></td>
             <td style="color: blue;" id="priceLabel"></td>
           </tr>
           <tr>
             <th>Sales</th>
-            <td><input style="width: 400px;" type="range" min="0" max="10000000" step="100000" value="8000000" id="sales" oninput="updateWidgets(this)" onchange="sendAndUpdate()"/></td>
+            <td><input style="width: 400px;" type="range" min="0" max="10000000" step="100000" value="8000000" id="sales" oninput="updateWidgets(this)"/></td>
             <td style="color: blue;" id="salesLabel"></td>
           </tr>
           <tr>
             <th>Marketing</th>
-            <td><input style="width: 400px;" type="range" min="0" max="10000000" step="100000" value="2000000" id="marketing" oninput="updateWidgets(this)" onchange="sendAndUpdate()"/></td>
+            <td><input style="width: 400px;" type="range" min="0" max="10000000" step="100000" value="2000000" id="marketing" oninput="updateWidgets(this)"/></td>
             <td style="color: blue;" id="marketingLabel"></td>
           </tr>
           <tr>
             <th>Trade Discount</th>
-            <td><input style="width: 400px;" type="range" min="0" max="0.1" step="0.001" value="5.0" id="tradeDiscount" oninput="updateWidgets(this)" onchange="sendAndUpdate()"/></td>
+            <td><input style="width: 400px;" type="range" min="0" max="0.1" step="0.001" value="0.05" id="tradeDiscount" oninput="updateWidgets(this)"/></td>
             <td style="color: blue;" id="tradeDiscountLabel"></td>
+          </tr>
+          <tr>
+            <th></th>
+            <td><button id="sendButton" onclick="send()">Submit</button></td>
+            <td></td>
           </tr>
         </table>
         <h2>Step #3 - Observe Performance</h2>
@@ -72,8 +77,8 @@
       <script type="text/javascript">
         var ws = null;
         var budget;
-        var round;
-        var lastRound;
+        var round = 0;
+        var lastRound = 0;
         var lastSales;
         var lastMarketing;
         
@@ -110,6 +115,11 @@
             var team = document.getElementById('team').value;
             var teamIndex = responseObject['inputs']['Team'].indexOf(team);
             round = parseInt(responseObject['outputs']['Round'][0].replace(/,/g, ''));
+            if (round == -1 || round != lastRound) {
+              document.getElementById('sendButton').disabled = false;
+            }
+            lastRound = round;
+            document.getElementById('round').innerHTML = round;
             if (teamIndex != -1) {
               var price = parseFloat(responseObject['inputs']['Price'][teamIndex].replace(/,/g, ''));
               var sales = parseFloat(responseObject['inputs']['Sales'][teamIndex].replace(/,/g, ''));
@@ -123,10 +133,6 @@
               var marketShare = responseObject['outputs']['Market Share'][teamIndex];
               console.log('Input: Team:', team, 'Price:', price, 'Sales:', sales, 'Marketing', marketing, 'Trade Discount', tradeDiscount);
               console.log('Output: Sales & Marketing Budget:', budget, 'Starting Gross Margin:', startingGrossMargin, 'Team:', team, 'Revenue:', revenue, 'Gross Margin:', grossMargin, 'Gross Profit Growth:', grossProfitGrowth, 'Market Share:', marketShare);
-              document.getElementById('price').value = price;
-              document.getElementById('sales').value = sales;
-              document.getElementById('marketing').value = marketing;
-              document.getElementById('tradeDiscount').value = tradeDiscount;
               document.getElementById('revenue').innerHTML = revenue;
               var grossMarginLabel = document.getElementById('grossMargin');
               grossMarginLabel.innerHTML = (grossMargin * 100.0).toFixed(3) + "%";
@@ -159,7 +165,8 @@
           };
         }
         
-        function sendAndUpdate() {
+        function send() {
+          document.getElementById('sendButton').disabled = true;
           document.getElementById('revenue').innerHTML = "Calculating...";
           document.getElementById('grossMargin').innerHTML = "";
           document.getElementById('grossProfitGrowth').innerHTML = "";
@@ -177,17 +184,10 @@
           }
         }
       
-        function update() {
-          console.log('Updating...');
-          if (ws != null) {
-            var teamInput = document.getElementById('team');
-            var team = teamInput.value;
-            if (team != null && team != 'Select Team') {
-              teamInput.disabled = true;
-              ws.send("");
-              console.log('Sent:');
-            }
-          }
+        function updateTeam() {
+          document.getElementById('team').disabled = true;
+          document.getElementById('sendButton').disabled = true;
+          document.getElementById('loading').style.display = 'block'; 
         }
       
         function hideWidgets() {
@@ -221,11 +221,8 @@
           var tradeDiscount = parseFloat(tradeDiscountInput.value);
           document.getElementById('tradeDiscountLabel').innerHTML = (100.0 * tradeDiscount).toFixed(2) + "%";
         }
-      
+        
         WebSocketTest();
-        setInterval(function timeout() {
-            update();
-        }, 10000);
       </script>
     </div>
   </body>
