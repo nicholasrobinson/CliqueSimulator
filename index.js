@@ -128,17 +128,19 @@ function processInputsAndFetchInputsAndOutputs(auth, ws, inputMsg) {
   var price = requestObject['price'];
   var sales = requestObject['sales'];
   var marketing = requestObject['marketing'];  
+  var tradeDiscount = requestObject['tradeDiscount'];  
   let values = [
     [price],
     [sales],
     [marketing],
+    [tradeDiscount],
   ];
   const resource = {
     values,
   };
   sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
-    range: 'Inputs!' + col + '6:' + col + '8',
+    range: 'Inputs!' + col + '5:' + col + '8',
     valueInputOption: 'USER_ENTERED',
     resource: resource,
   }, (err, result) => {
@@ -158,7 +160,7 @@ function fetchInputsAndOutputs(auth, ws) {
   // Fetch Inputs
   sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: 'Inputs!C5:F8',
+    range: 'Inputs!C4:F8',
   }, (err, res) => {
     if (err) return console.log('The API returned an error: ' + err);
     const rows = res.data.values;
@@ -175,7 +177,7 @@ function fetchInputsAndOutputs(auth, ws) {
     // Fetch Outputs
     sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Outputs!C4:F7',
+      range: 'Outputs!C4:F11',
     }, (err, res) => {
       if (err) return console.log('The API returned an error: ' + err);
       const rows = res.data.values;
