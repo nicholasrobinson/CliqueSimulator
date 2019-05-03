@@ -187,7 +187,7 @@ function fetchInputsAndOutputs(auth) {
     // Fetch Outputs
     sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Outputs!C4:F11',
+      range: 'Outputs!C4:F12',
     }, (err, res) => {
       if (err) return console.log('The API returned an error: ' + err);
       const rows = res.data.values;
@@ -198,13 +198,17 @@ function fetchInputsAndOutputs(auth) {
           responseObj['outputs'][row[0]] = [row[1], row[2], row[3]];
         });
         
-        var outputMsg = JSON.stringify(responseObj);
-        wss.clients.forEach(function each(client) {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(outputMsg);
-          }
-        });
-        console.log('Sent:', outputMsg);
+        if (responseObj['outputs']['Send'][0] == 'TRUE') {
+          var outputMsg = JSON.stringify(responseObj);
+          wss.clients.forEach(function each(client) {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(outputMsg);
+            }
+          });
+          console.log('Sent:', outputMsg);
+        } else {
+          console.log('Not Sending...');
+        }
       } else {
         console.log('No data found.');
       }
