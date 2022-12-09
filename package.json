@@ -4,7 +4,7 @@
   "description": "A simple Node.js command-line application that makes requests to the Google Sheets API.",
   "private": true,
   "dependencies": {
-    "express": "^4.16.4",
+    "express": "^4.18.2",
     "express-ws": "^4.0.0",
     "googleapis": "^39.1.0"
   },
